@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 
 export function useNativeDialog(open: boolean) {
   const ref = useRef<HTMLDialogElement>(null)
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = ref.current
     if (!open || !dialog) return
     const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null
