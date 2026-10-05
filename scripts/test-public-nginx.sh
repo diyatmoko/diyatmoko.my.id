@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Real Docker smoke test for the public domain helper, isolated from production.
 set -Eeuo pipefail
+trap 'printf "Public Nginx test failed at line %s (status %s).\n" "$LINENO" "$?" >&2' ERR
 [[ ${GITHUB_ACTIONS:-} == true ]] || { printf 'Run this isolated test in GitHub Actions, not on the production VPS.\n' >&2; exit 1; }
 fixture=$(mktemp -d)
 network="portfolio-public-test-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
@@ -66,8 +67,24 @@ curl --fail --silent --show-error --resolve other.example:18082:127.0.0.1 http:/
 printf 'challenge-after-https' > "$fixture/webroot/.well-known/acme-challenge/after-https"
 curl --fail --silent --show-error --resolve diyatmoko.my.id:18082:127.0.0.1 \
   http://diyatmoko.my.id:18082/.well-known/acme-challenge/after-https | grep -Fx challenge-after-https
-curl --silent --show-error --resolve diyatmoko.my.id:18082:127.0.0.1 \
-  --dump-header "$fixture/redirect" --output /dev/null http://diyatmoko.my.id:18082/
-tr -d '\r' < "$fixture/redirect" | grep -Fx 'Location: https://diyatmoko.my.id/'
+# Reload is asynchronous; wait for the HTTP workers to apply the new redirect.
+redirect_ready=false
+for attempt in {1..10}; do
+  if status=$(curl --silent --show-error --noproxy '*' --max-time 5 \
+    --resolve diyatmoko.my.id:18082:127.0.0.1 --dump-header "$fixture/redirect" \
+    --output /dev/null --write-out '%{http_code}' http://diyatmoko.my.id:18082/) &&
+    [[ $status == 301 ]] &&
+    tr -d '\r' < "$fixture/redirect" | grep -Fxi 'Location: https://diyatmoko.my.id/'; then
+    redirect_ready=true
+    printf 'Canonical HTTPS redirect verified (attempt %s).\n' "$attempt"
+    break
+  fi
+  sleep 1
+done
+if ! $redirect_ready; then
+  printf 'Expected HTTP 301 to the canonical HTTPS domain; last status: %s.\n' "${status:-unknown}" >&2
+  cat "$fixture/redirect" >&2
+  exit 1
+fi
 docker run --rm certbot/certbot:v5.8.0 --version
 printf 'Public HTTP/HTTPS, release identity, ACME path, unrelated virtual host, and Certbot image checks passed.\n'
