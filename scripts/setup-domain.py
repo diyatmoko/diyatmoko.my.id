@@ -198,7 +198,8 @@ class DomainSetup:
         key = certificate.with_name("privkey.pem")
         if not certificate.is_file() or not key.is_file():
             raise SetupError("A certificate and private key are required before installing the HTTPS virtual host.")
-        output = run(["openssl", "x509", "-in", str(certificate), "-noout", "-checkhost", DOMAIN, "-checkend", "86400"])
+        run(["openssl", "x509", "-in", str(certificate), "-noout", "-checkend", "86400"])
+        output = run(["openssl", "x509", "-in", str(certificate), "-noout", "-checkhost", DOMAIN])
         if f"Hostname {DOMAIN} does match certificate" not in output:
             raise SetupError("The installed certificate does not cover the portfolio domain.")
 

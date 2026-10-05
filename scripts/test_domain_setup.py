@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -163,6 +164,19 @@ class DomainSetupTests(unittest.TestCase):
         with patch.object(domain, "run", side_effect=runner):
             setup = domain.DomainSetup("nginx", app)
         with patch.object(domain, "run", return_value=f"Hostname {domain.DOMAIN} does NOT match certificate"), self.assertRaisesRegex(domain.SetupError, "does not cover"):
+            setup.check_certificate()
+
+    @unittest.skipUnless(shutil.which("openssl"), "OpenSSL is a setup prerequisite")
+    def test_real_certificate_hostname_and_expiry_are_checked_separately(self):
+        app, certificates, _, _, _, runner = self.fixture()
+        folder = certificates / "live" / domain.DOMAIN
+        folder.mkdir(parents=True)
+        subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-keyout", str(folder / "privkey.pem"), "-out", str(folder / "fullchain.pem"), "-subj", "/CN=diyatmoko.my.id", "-addext", "subjectAltName=DNS:diyatmoko.my.id"], check=True, capture_output=True)
+        with patch.object(domain, "run", side_effect=runner):
+            setup = domain.DomainSetup("nginx", app)
+        setup.check_certificate()
+        subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-keyout", str(folder / "privkey.pem"), "-out", str(folder / "fullchain.pem"), "-subj", "/CN=wrong.example", "-addext", "subjectAltName=DNS:wrong.example"], check=True, capture_output=True)
+        with self.assertRaisesRegex(domain.SetupError, "does not cover"):
             setup.check_certificate()
 
     def test_conflicting_server_name_warning_is_a_failure(self):

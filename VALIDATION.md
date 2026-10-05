@@ -2,27 +2,27 @@
 
 Frontend verified on 2 October 2026 against the production build and again through GitHub Actions on 5 October 2026. VPS deployment succeeded on 5 October 2026; public-domain setup is a separate one-time step.
 
-| Check                                            | Result                                                                                                  |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| ESLint, including React hook rules               | Passed; zero warnings                                                                                   |
-| Strict TypeScript compilation                    | Passed                                                                                                  |
-| Vite production build and prerender              | Passed; all sections and 3 project summaries present in HTML                                            |
-| Dependency audit                                 | 0 reported vulnerabilities                                                                              |
-| Chromium browser suite                           | 24 tests passed                                                                                         |
-| Responsive EN/ID layouts                         | Passed at 320, 390, 768, 1024, and 1440 px                                                              |
-| Hydration and asset loading under production CSP | Passed; no browser errors or blocked assets                                                             |
-| Project filters and focus controls               | Passed                                                                                                  |
-| Dialog focus trap, Escape, and focus restoration | Passed                                                                                                  |
-| Mobile menu and desktop resize                   | Passed                                                                                                  |
-| Language and motion persistence                  | Passed                                                                                                  |
-| OS reduced motion, including changes while open  | Passed                                                                                                  |
-| Content without JavaScript                       | Passed                                                                                                  |
-| Automated WCAG A/AA checks                       | Passed on desktop, mobile, and the project dialog                                                       |
-| SEO assets, caching headers, and health endpoint | Passed                                                                                                  |
-| Deployment transaction and rollback simulation   | 20 tests passed against the real Bash scripts with mocked Docker/HTTP/SSH/GitHub boundaries             |
-| Shared Nginx configuration failure handling      | 15 Python tests passed, including rollback, duplicate hosts, missing certificates, and release identity |
-| Deployment shell scripts                         | Bash syntax checks passed                                                                               |
-| Workflow and VPS Compose files                   | YAML parse, job dependencies, main gate, environment, and action SHA pins checked                       |
+| Check                                            | Result                                                                                                     |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| ESLint, including React hook rules               | Passed; zero warnings                                                                                      |
+| Strict TypeScript compilation                    | Passed                                                                                                     |
+| Vite production build and prerender              | Passed; all sections and 3 project summaries present in HTML                                               |
+| Dependency audit                                 | 0 reported vulnerabilities                                                                                 |
+| Chromium browser suite                           | 24 tests passed                                                                                            |
+| Responsive EN/ID layouts                         | Passed at 320, 390, 768, 1024, and 1440 px                                                                 |
+| Hydration and asset loading under production CSP | Passed; no browser errors or blocked assets                                                                |
+| Project filters and focus controls               | Passed                                                                                                     |
+| Dialog focus trap, Escape, and focus restoration | Passed                                                                                                     |
+| Mobile menu and desktop resize                   | Passed                                                                                                     |
+| Language and motion persistence                  | Passed                                                                                                     |
+| OS reduced motion, including changes while open  | Passed                                                                                                     |
+| Content without JavaScript                       | Passed                                                                                                     |
+| Automated WCAG A/AA checks                       | Passed on desktop, mobile, and the project dialog                                                          |
+| SEO assets, caching headers, and health endpoint | Passed                                                                                                     |
+| Deployment transaction and rollback simulation   | 20 tests passed against the real Bash scripts with mocked Docker/HTTP/SSH/GitHub boundaries                |
+| Shared Nginx configuration failure handling      | 16 Python tests passed, including rollback, duplicate hosts, real certificate checks, and release identity |
+| Deployment shell scripts                         | Bash syntax checks passed                                                                                  |
+| Workflow and VPS Compose files                   | YAML parse, job dependencies, main gate, environment, and action SHA pins checked                          |
 
 The verified client bundle is approximately **128 kB gzipped**, with approximately **7 kB gzipped CSS** and a **25 kB local variable font**. Static project artwork is rendered from code; no third-party font, tracking, or image requests are required.
 
