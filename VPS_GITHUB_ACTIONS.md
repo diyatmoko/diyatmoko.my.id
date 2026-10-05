@@ -90,7 +90,29 @@ Deploy ditolak jika `main` sudah berubah ketika verifikasi selesai. Jalankan wor
 
 Image pertama dapat dideploy sebelum domain diarahkan. Workflow memverifikasi HTTP lokal pada VPS; DNS, sertifikat, dan reverse proxy publik perlu dikonfigurasi sekali melalui stack Nginx/ACME Anda yang sudah ada.
 
-Untuk Nginx publik **di Docker**, kedua container harus menggunakan network yang diisi pada setup. Gunakan contoh virtual host baru di **`deploy/nginx-vps.conf.example`**, sesuaikan mount webroot dan lokasi sertifikat dengan stack Anda. Contoh tersebut memerlukan sertifikat valid untuk `diyatmoko.my.id` terlebih dahulu.
+Untuk stack Nginx publik **di Docker**, jalankan helper berikut di VPS setelah job deploy berhasil:
+
+```bash
+git pull --ff-only origin main
+sudo python3 scripts/setup-domain.py
+```
+
+Helper membaca network, port, dan identitas **rilis aktif** dari deployment VPS. Ia menemukan bind mounts konfigurasi Nginx, webroot ACME, dan sertifikat dari container **`nginx`**. Ia membutuhkan Python 3, Docker, curl, OpenSSL, dan systemd pada VPS; GitHub credentials tidak digunakan dalam langkah domain ini.
+
+Urutannya: validasi upstream portfolio → virtual host HTTP khusus → uji HTTP dan challenge ACME → Certbot webroot → validasi sertifikat → virtual host HTTPS → uji identitas rilis melalui origin dan DNS publik → timer renewal dua kali sehari. Certbot memakai image resmi `certbot/certbot:v5.8.0` yang diverifikasi di CI. Jika akun ACME belum tersedia, isi email dan persetujuan yang diminta Certbot secara interaktif; helper tidak menerima Terms of Service atas nama Anda.
+
+Sebelumnya, arahkan DNS **A `@`** ke VPS dan pastikan record **AAAA**, jika ada, juga mengarah ke server yang benar. HTTP port 80 harus dapat diakses untuk validasi ACME. Jika DNS/proxy/CDN masih mengarahkan domain ke layanan lain, perbaiki routing itu sebelum meminta sertifikat.
+
+File baru bernama **`diyatmoko-portfolio.conf`**, tanpa menjadikannya default server. Helper menolak file yang tidak dikelolanya dan virtual host lain yang sudah mendeklarasikan domain yang sama. Ia menguji seluruh konfigurasi sebelum reload dan mengembalikan konfigurasi file portfolio sebelumnya jika validasi atau uji routing lokal gagal. Jika sertifikat gagal diterbitkan, routing HTTP yang sudah lolos pemeriksaan tetap tersedia untuk diperbaiki/dicoba ulang. Menjalankan setup ulang pada konfigurasi HTTPS yang sudah dikelola tidak menurunkannya kembali ke HTTP.
+
+Renewal dibatasi ke sertifikat **`diyatmoko.my.id`**, dengan timer **`diyatmoko-portfolio-cert-renew.timer`** dan helper milik root di **`/usr/local/lib/diyatmoko-portfolio`**. Periksa status dan log:
+
+```bash
+sudo systemctl status diyatmoko-portfolio-cert-renew.timer
+sudo journalctl -u diyatmoko-portfolio-cert-renew.service --no-pager -n 30
+```
+
+Untuk konfigurasi manual, contoh virtual host **`deploy/nginx-vps.conf.example`** tetap tersedia; siapkan sertifikat valid terlebih dahulu sebelum memasang blok TLS dari contoh tersebut.
 
 Upstream contoh memakai **`diyatmoko-portfolio:8080`** dan resolver Docker **`127.0.0.11`**. Resolver diperlukan agar Nginx mengikuti alamat container baru setelah deployment, tanpa reload Nginx pada setiap rilis.
 
@@ -101,6 +123,7 @@ Uji konfigurasi Nginx sebelum reload, pertahankan virtual host lain, arahkan DNS
 ```bash
 curl --fail --head https://diyatmoko.my.id/
 curl --fail https://diyatmoko.my.id/health.txt
+curl --fail https://diyatmoko.my.id/release.json
 ```
 
 Health check lokal tidak membuktikan DNS/TLS publik sudah benar. Periksa tampilan desktop/mobile, bahasa EN/ID, dan dialog project pada domain live setelah setup awal.

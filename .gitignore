@@ -13,3 +13,5 @@ coverage/
 .idea/
 .vscode/
 release-image/
+__pycache__/
+*.py[cod]

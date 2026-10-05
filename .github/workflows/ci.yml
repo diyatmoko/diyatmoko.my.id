@@ -42,6 +42,8 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run test:deployment
+      - name: Test shared Nginx setup failure handling
+        run: python3 -m unittest discover -s scripts -p 'test_domain_setup.py' -v
       - name: Build production bundle with release identity
         run: |
           npm run build
@@ -103,6 +105,8 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:18080/release.json | grep -F "\"sha\":\"$GITHUB_SHA\""
           docker compose -p diyatmoko-portfolio-vps -f deploy/compose.vps.yaml exec -T portfolio nginx -t
           test "$(docker compose -p diyatmoko-portfolio-vps -f deploy/compose.vps.yaml exec -T portfolio id -u)" = "101"
+      - name: Verify public HTTP HTTPS and ACME routing
+        run: bash scripts/test-public-nginx.sh
       - name: Export validated image for SSH delivery
         if: >-
           github.ref == 'refs/heads/main' &&

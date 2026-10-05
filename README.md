@@ -67,6 +67,8 @@ npm run deploy:setup
 
 It uses your existing administrator SSH access and GitHub CLI to create a deployment key and configure GitHub environment secrets. Subsequent releases run through **Actions → Portfolio CI & VPS → Run workflow → deploy**. Choose **rollback** to restore the previous successful release. See [VPS_GITHUB_ACTIONS.md](./VPS_GITHUB_ACTIONS.md) for prerequisites, the initial domain/TLS setup, and optional automatic deployments on `main`.
 
+After the first VPS deployment, configure the public Docker Nginx once with `sudo python3 scripts/setup-domain.py`. The helper installs a dedicated HTTP/HTTPS virtual host, requests the domain certificate through Certbot webroot, verifies the served release, and configures certificate renewal. Point the domain DNS to the VPS first; complete any Certbot account prompts in the terminal. Regular releases continue through GitHub Actions.
+
 For a manual Docker build:
 
 ```bash
