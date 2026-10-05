@@ -1,0 +1,11 @@
+services:
+  portfolio:
+    networks:
+      edge:
+        aliases:
+          - diyatmoko-portfolio
+
+networks:
+  edge:
+    external: true
+    name: ${PORTFOLIO_PROXY_NETWORK:?Set the network already attached to your public Nginx}

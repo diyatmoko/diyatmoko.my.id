@@ -1,0 +1,7 @@
+# Package the exact output that passed the browser tests; do not rebuild on the VPS.
+FROM nginxinc/nginx-unprivileged:stable-alpine
+COPY dist/ /usr/share/nginx/html/
+COPY deploy/generated/nginx.conf /etc/nginx/conf.d/default.conf
+USER 101
+EXPOSE 8080
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=6 CMD wget -q -O - http://127.0.0.1:8080/health.txt || exit 1

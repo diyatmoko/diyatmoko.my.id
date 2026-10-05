@@ -1,0 +1,22 @@
+services:
+  portfolio:
+    image: ${PORTFOLIO_IMAGE:?A release image is required}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${PORTFOLIO_BIND_PORT:-18080}:8080'
+    read_only: true
+    tmpfs:
+      - /tmp:uid=101,gid=101,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: '0.50'
+    pids_limit: 100
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: '2'

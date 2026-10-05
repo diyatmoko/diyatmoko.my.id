@@ -1,0 +1,6 @@
+**
+!dist
+!dist/**
+!deploy
+!deploy/generated
+!deploy/generated/nginx.conf
