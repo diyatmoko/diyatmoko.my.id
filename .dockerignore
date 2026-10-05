@@ -1,0 +1,9 @@
+.git
+.env*
+node_modules
+dist
+deploy/generated
+test-results
+playwright-report
+tests
+*.tsbuildinfo

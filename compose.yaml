@@ -1,0 +1,19 @@
+name: diyatmoko-portfolio
+
+services:
+  portfolio:
+    build:
+      context: .
+      args:
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://diyatmoko.my.id}
+    image: diyatmoko-portfolio:1.0.0
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8080:8080'
+    read_only: true
+    tmpfs:
+      - /tmp:uid=101,gid=101,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

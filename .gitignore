@@ -1,0 +1,15 @@
+node_modules/
+dist/
+deploy/generated/
+test-results/
+playwright-report/
+coverage/
+.env
+.env.*
+!.env.example
+*.local
+*.tsbuildinfo
+.DS_Store
+.idea/
+.vscode/
+release-image/
