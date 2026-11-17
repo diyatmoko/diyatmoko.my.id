@@ -199,7 +199,12 @@ class DomainSetup:
         if not certificate.is_file() or not key.is_file():
             raise SetupError("A certificate and private key are required before installing the HTTPS virtual host.")
         run(["openssl", "x509", "-in", str(certificate), "-noout", "-checkend", "86400"])
-        output = run(["openssl", "x509", "-in", str(certificate), "-noout", "-checkhost", DOMAIN])
+        # OpenSSL 3.0 exits 0 on a hostname mismatch; newer releases exit 1.
+        # Decide on the printed verdict either way.
+        try:
+            output = run(["openssl", "x509", "-in", str(certificate), "-noout", "-checkhost", DOMAIN])
+        except SetupError as error:
+            output = str(error)
         if f"Hostname {DOMAIN} does match certificate" not in output:
             raise SetupError("The installed certificate does not cover the portfolio domain.")
 

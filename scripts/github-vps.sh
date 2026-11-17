@@ -23,32 +23,26 @@ if [[ $operation == deploy ]]; then
 fi
 
 temporary=$(mktemp -d "${RUNNER_TEMP:-/tmp}/portfolio-ssh.XXXXXXXX")
-incoming=''
 printf '%s\n' "$VPS_SSH_KEY" > "$temporary/key"
 printf '%s\n' "$VPS_KNOWN_HOSTS" > "$temporary/known_hosts"
 chmod 600 "$temporary/key" "$temporary/known_hosts"
 common=(-i "$temporary/key" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$temporary/known_hosts" -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
 ssh_options=(-p "$port" "${common[@]}")
-scp_options=(-P "$port" "${common[@]}")
 remote="$VPS_USER@$VPS_HOST"
 cleanup() {
   local status=$?
   trap - EXIT
-  if [[ -n $incoming ]]; then ssh "${ssh_options[@]}" "$remote" "rm -rf -- '$incoming'" >/dev/null 2>&1 || true; fi
   rm -rf -- "$temporary"
   exit "$status"
 }
 trap cleanup EXIT
 
-upload=$(ssh "${ssh_options[@]}" "$remote" 'umask 077; mktemp -d /opt/diyatmoko-portfolio/incoming/run-XXXXXXXX')
-[[ $upload =~ ^/opt/diyatmoko-portfolio/incoming/run-[a-zA-Z0-9]+$ ]] || fail 'The VPS returned an unexpected upload directory.'
-incoming=$upload
-scp "${scp_options[@]}" deploy/vps-rollout.sh "$remote:$incoming/rollout.sh"
+# The deploy key is pinned to a forced-command gate on the VPS
+# (mesthi-infra platform/edge/deploy-gates/portfolio-ssh-gate). Only two
+# requests exist, and the rollout script and Compose files are root-owned on
+# the VPS: CI sends nothing but the validated image archive.
 if [[ $operation == deploy ]]; then
-  scp "${scp_options[@]}" release-image/image.tar.gz release-image/image.tar.gz.sha256 "$remote:$incoming/"
-  scp "${scp_options[@]}" deploy/compose.vps.yaml "$remote:$incoming/compose.yaml"
-  scp "${scp_options[@]}" deploy/compose.proxy.yaml "$remote:$incoming/compose.proxy.yaml"
-  ssh "${ssh_options[@]}" "$remote" "bash '$incoming/rollout.sh' deploy '$incoming' '$2'"
+  tar -C release-image -cf - image.tar.gz image.tar.gz.sha256 | ssh "${ssh_options[@]}" "$remote" "deploy $2"
 else
-  ssh "${ssh_options[@]}" "$remote" "bash '$incoming/rollout.sh' rollback"
+  ssh "${ssh_options[@]}" "$remote" rollback < /dev/null
 fi
