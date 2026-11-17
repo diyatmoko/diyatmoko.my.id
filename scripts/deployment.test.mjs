@@ -353,11 +353,20 @@ test('SSH client sends only gate requests and never uploads rollout or Compose f
   })
   passed(result)
   const calls = await f.calls()
-  assert.equal(calls.some((call) => call[0] === 'scp'), false)
+  assert.equal(
+    calls.some((call) => call[0] === 'scp'),
+    false,
+  )
   const ssh = calls.filter((call) => call[0] === 'ssh')
-  assert.deepEqual(ssh.map((call) => call.at(-1)), [`deploy ${id}`])
+  assert.deepEqual(
+    ssh.map((call) => call.at(-1)),
+    [`deploy ${id}`],
+  )
   const listing = spawnSync('tar', ['-tf', join(f.root, 'upload.tar')], { encoding: 'utf8' })
-  assert.deepEqual(listing.stdout.trim().split('\n').sort(), ['image.tar.gz', 'image.tar.gz.sha256'])
+  assert.deepEqual(listing.stdout.trim().split('\n').sort(), [
+    'image.tar.gz',
+    'image.tar.gz.sha256',
+  ])
 })
 
 test('SSH deployment accepts the production secret names used by ai.mesthi.com', async (t) => {
