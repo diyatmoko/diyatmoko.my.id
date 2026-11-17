@@ -33,7 +33,8 @@ if (command === 'gh') {
   }
 } else if (command === 'ssh') {
   const remoteCommand = args.at(-1);
-  if (remoteCommand.includes('mktemp -d')) process.stdout.write(process.env.MOCK_BAD_UPLOAD || '/opt/diyatmoko-portfolio/incoming/run-MOCK1234');
+  if (remoteCommand.startsWith('deploy ')) fs.writeFileSync(path.join(root, 'upload.tar'), fs.readFileSync(0));
+  else if (remoteCommand.includes('mktemp -d')) process.stdout.write(process.env.MOCK_BAD_UPLOAD || '/opt/diyatmoko-portfolio/incoming/run-MOCK1234');
   else if (remoteCommand.includes('cat /opt/diyatmoko-portfolio/config')) process.stdout.write('PORTFOLIO_BIND_PORT=18080\\nPORTFOLIO_PROXY_NETWORK=edge\\n');
 } else if (command === 'scp') {
   // Upload boundary only; no real host is contacted.
@@ -327,15 +328,18 @@ test('SSH client pins the host key and removes temporary credentials after rollb
     const key = call[call.indexOf('-i') + 1]
     await assert.rejects(readFile(key), { code: 'ENOENT' })
   }
-  assert.ok(
-    calls.some((call) => call.at(-1).includes('rollout.sh') && call.at(-1).endsWith('rollback')),
-  )
+  assert.ok(calls.some((call) => call[0] === 'ssh' && call.at(-1) === 'rollback'))
 })
 
-test('SSH client rejects an unexpected upload path without issuing a destructive cleanup', async (t) => {
+test('SSH client sends only gate requests and never uploads rollout or Compose files', async (t) => {
   const f = await fixture(t)
-  const result = spawnSync('bash', [join(project, 'scripts/github-vps.sh'), 'rollback'], {
-    cwd: project,
+  const work = join(f.root, 'work')
+  await mkdir(join(work, 'release-image'), { recursive: true })
+  await writeFile(join(work, 'release-image', 'image.tar.gz'), 'image-bytes')
+  await writeFile(join(work, 'release-image', 'image.tar.gz.sha256'), 'checksum')
+  const id = `${'a'.repeat(40)}-1-1`
+  const result = spawnSync('bash', [join(project, 'scripts/github-vps.sh'), 'deploy', id], {
+    cwd: work,
     env: {
       ...f.env,
       RUNNER_TEMP: f.root,
@@ -343,16 +347,17 @@ test('SSH client rejects an unexpected upload path without issuing a destructive
       VPS_USER: 'portfolio-deploy',
       VPS_SSH_KEY: 'test-key-boundary',
       VPS_KNOWN_HOSTS: 'test-host-key-boundary',
-      MOCK_BAD_UPLOAD: '/opt/unrelated-application',
     },
     encoding: 'utf8',
     timeout: 15_000,
   })
-  assert.notEqual(result.status, 0)
-  assert.equal(
-    (await f.calls()).some((call) => call.some((arg) => arg.startsWith('rm -rf'))),
-    false,
-  )
+  passed(result)
+  const calls = await f.calls()
+  assert.equal(calls.some((call) => call[0] === 'scp'), false)
+  const ssh = calls.filter((call) => call[0] === 'ssh')
+  assert.deepEqual(ssh.map((call) => call.at(-1)), [`deploy ${id}`])
+  const listing = spawnSync('tar', ['-tf', join(f.root, 'upload.tar')], { encoding: 'utf8' })
+  assert.deepEqual(listing.stdout.trim().split('\n').sort(), ['image.tar.gz', 'image.tar.gz.sha256'])
 })
 
 test('SSH deployment accepts the production secret names used by ai.mesthi.com', async (t) => {
